@@ -1,0 +1,201 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nThis is your SQL Buddy! What insights do you need?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -64,
+        -32
+      ],
+      "id": "8474e799-64cb-4ffc-8679-748b8862a0ea",
+      "name": "When chat message received",
+      "webhookId": "721d4e1e-c3bc-44a2-99c1-9a7420f4f90c"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a SQL Analytics Agent for a PostgreSQL database.\n\nYour job is to convert natural language questions into SQL queries and execute them using the provided SQL tool.\n\nThe database follows a STAR SCHEMA.\n\nDIMENSION TABLES:\n- dim_customer(customer_code, customer, platform, channel, market)\n- dim_product(product_code, product, variant, division, segment, category)\n\nFACT TABLES:\n- fact_sales_monthly(date, product_code, customer_code, sold_quantity)\n- fact_forecast_monthly(date, product_code, customer_code, forecast_quantity)\n- fact_gross_price(product_code, fiscal_year, gross_price)\n- fact_freight_cost(market, fiscal_year, freight_pct)\n- fact_manufacturing_cost(product_code, cost_year, manufacturing_cost)\n- fact_pre_invoice_deductions(customer_code, fiscal_year, discount_pct)\n- fact_post_invoice_deductions(customer_code, product_code, date, discounts_pct, other_deductions_pct)\n\nRules:\n1. You MUST use tools to answer questions.\n2. You MUST NOT ask the user for table names or column names.\n3. You MUST infer required joins based on the schema.\n4. Use fact tables for measures and dimension tables for filters.\n5. If filtering by country, use dim_customer.market.\n6. If filtering by year, extract the year from date columns.\n7. Do NOT hallucinate tables or columns.\n\nIf the requested information cannot be answered using the available data, respond EXACTLY with:\n\"There is no available data to answer the particular question, but I can help with the following details.\"\n\nOutput Rules:\n- When intent is clear, generate SQL and execute it.\n- Return only the final answer (no SQL explanation unless asked).\n- Queries must be read-only.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "495eed57-0b2f-47cd-b2ce-fcc4c1d121ef",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        112
+      ],
+      "id": "57ee0a6a-3a0c-4873-80db-3dc675cbc8ca",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "dwfdJBoJfHwHSpXD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "877709a3-1f49-4da4-b864-2f1a91301fc5",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Insert rows in a table in Postgres ",
+        "operation": "executeQuery",
+        "query": "SELECT\n  table_name,\n  column_name,\n  data_type\nFROM information_schema.columns\nWHERE table_schema = 'public'\nORDER BY table_name, ordinal_position;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        400,
+        256
+      ],
+      "id": "345e641b-b5cb-490d-a171-864ee4c42ac3",
+      "name": "Execute a SQL query in Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "WahEc1LpPOKgSXgv",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "1NDSe2To2JSStmxo",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/1NDSe2To2JSStmxo",
+          "cachedResultName": "My workflow 2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sql_query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('sql_query', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "sql_query"
+          ],
+          "schema": [
+            {
+              "id": "sql_query",
+              "displayName": "sql_query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        192
+      ],
+      "id": "18814b97-af0c-47f4-93c7-2f8cee115ddf",
+      "name": "Call 'My workflow 2'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in Postgres": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'My workflow 2'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "43e5cda3-22e0-4204-b22e-eab9ca8c8e2d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fc92986220f8a5b1e3e8a355b84d202eae3c137ed9f49e9cc2c38e61f20486a4"
+  },
+  "id": "uUjAV3LsnSkEyeUC",
+  "tags": []
+}
